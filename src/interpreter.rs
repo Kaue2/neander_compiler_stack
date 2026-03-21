@@ -1,3 +1,4 @@
+use clap::Parser;
 use std::error::Error;
 use std::fmt::{self, write};
 use std::fs::{self};
@@ -23,6 +24,12 @@ pub struct Interpreter {
     pub negative_f: bool,
     pub mem: Vec<u8>,
     should_stop: bool,
+}
+
+#[derive(Parser)]
+struct Cli {
+    #[arg(long, short)]
+    name: String,
 }
 
 fn nop(_i: &mut Interpreter, _addr: usize) {
@@ -167,6 +174,7 @@ impl fmt::Display for Interpreter {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    let cli = Cli::parse();
     let data = fs::read("file.bin")?;
     let mut interpreter = Interpreter::new().set_mem(data);
     println!("{}", interpreter);
