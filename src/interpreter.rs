@@ -30,16 +30,19 @@ fn nop(_i: &mut Interpreter, _addr: usize) {
 }
 
 fn sta(i: &mut Interpreter, addr: usize) {
+    println!("função sta chamada");
     i.mem[addr] = i.acc;
     return;
 }
 
 fn lda(i: &mut Interpreter, addr: usize) {
+    println!("função lda chamada para o endereço: {}", addr);
     i.acc = i.mem[addr];
     return;
 }
 
 fn add(i: &mut Interpreter, addr: usize) {
+    println!("Função soma chamada para o endereço: {}", addr);
     i.acc += i.mem[addr];
     return;
 }
@@ -60,6 +63,8 @@ fn not(i: &mut Interpreter, _addr: usize) {
 }
 
 fn jmp(i: &mut Interpreter, addr: usize) {
+    println!("função jmp chamada para o endereço: {}", addr);
+    println!("mem: {}", i.mem[addr]);
     i.pc.0 = addr as u16;
     return;
 }
@@ -119,9 +124,11 @@ impl Interpreter {
     }
 
     fn run(&mut self) {
-        while (self.pc.usize() * 2) < self.mem.len() && self.should_stop != true {
+        while self.pc.usize() < self.mem.len() && self.should_stop != true {
             // println!("pc: {}", self.pc.usize() * 2);
             let opcode = self.fetch();
+
+            println!("opcode: {}", opcode);
 
             if let Some(function) = Interpreter::get_rules(opcode) {
                 if opcode == 0 || opcode == 240 {
@@ -129,7 +136,7 @@ impl Interpreter {
                     continue;
                 }
 
-                let addr = ((self.fetch() * 2) + 4) as usize;
+                let addr = (self.fetch() as usize) * 2 + 4;
                 function(self, addr);
             } else {
                 continue;
