@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::fmt::{self, write};
 use std::fs::{self};
+use std::{env, io};
 
 type InstructionFn = fn(&mut Interpreter, addr: usize);
 struct ProgramCounter(u16);
@@ -89,15 +90,20 @@ fn hlt(i: &mut Interpreter, _addr: usize) {
 }
 
 impl Interpreter {
-    fn new(mem: Vec<u8>) -> Self {
+    fn new() -> Self {
         Interpreter {
             acc: 0,
             pc: ProgramCounter(4),
             zero_f: true,
             negative_f: false,
-            mem,
+            mem: vec![0],
             should_stop: false,
         }
+    }
+
+    fn set_mem(mut self, mem: Vec<u8>) -> Self {
+        self.mem = mem;
+        return self;
     }
 
     fn get_rules(opcode: u8) -> Option<InstructionFn> {
@@ -162,7 +168,7 @@ impl fmt::Display for Interpreter {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let data = fs::read("file.bin")?;
-    let mut interpreter = Interpreter::new(data);
+    let mut interpreter = Interpreter::new().set_mem(data);
     println!("{}", interpreter);
     interpreter.run();
     println!("{}", interpreter);
