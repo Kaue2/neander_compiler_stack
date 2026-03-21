@@ -25,29 +25,63 @@ pub struct Interpreter {
 }
 
 fn nop(_i: &mut Interpreter, _addr: usize) {
-    println!("função nop chamada");
+    // println!("função nop chamada");
     return;
 }
 
-fn sta(_i: &mut Interpreter, addr: usize) {}
+fn sta(i: &mut Interpreter, addr: usize) {
+    i.mem[addr] = i.acc;
+    return;
+}
 
-fn lda(_i: &mut Interpreter, addr: usize) {}
+fn lda(i: &mut Interpreter, addr: usize) {
+    i.acc = i.mem[addr];
+    return;
+}
 
-fn add(_i: &mut Interpreter, addr: usize) {}
+fn add(i: &mut Interpreter, addr: usize) {
+    i.acc += i.mem[addr];
+    return;
+}
 
-fn or(_i: &mut Interpreter, addr: usize) {}
+fn or(i: &mut Interpreter, addr: usize) {
+    i.acc = i.mem[addr] | i.acc;
+    return;
+}
 
-fn and(_i: &mut Interpreter, addr: usize) {}
+fn and(i: &mut Interpreter, addr: usize) {
+    i.acc = i.mem[addr] & i.acc;
+    return;
+}
 
-fn not(_i: &mut Interpreter, addr: usize) {}
+fn not(i: &mut Interpreter, _addr: usize) {
+    i.acc = !i.acc;
+    return;
+}
 
-fn jmp(_i: &mut Interpreter, addr: usize) {}
+fn jmp(i: &mut Interpreter, addr: usize) {
+    i.pc.0 = addr as u16;
+    return;
+}
 
-fn jn(_i: &mut Interpreter, addr: usize) {}
+fn jn(i: &mut Interpreter, addr: usize) {
+    if i.negative_f {
+        jmp(i, addr);
+    }
+    return;
+}
 
-fn jz(_i: &mut Interpreter, addr: usize) {}
+fn jz(i: &mut Interpreter, addr: usize) {
+    if i.zero_f {
+        jmp(i, addr);
+    }
+    return;
+}
 
-fn hlt(_i: &mut Interpreter, addr: usize) {}
+fn hlt(i: &mut Interpreter, _addr: usize) {
+    i.should_stop = true;
+    return;
+}
 
 impl Interpreter {
     fn new(mem: Vec<u8>) -> Self {
@@ -98,8 +132,7 @@ impl Interpreter {
                 let addr = ((self.fetch() * 2) + 4) as usize;
                 function(self, addr);
             } else {
-                eprintln!("Instrução inválida: {}", opcode);
-                self.should_stop = true;
+                continue;
             }
         }
     }
@@ -125,6 +158,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut interpreter = Interpreter::new(data);
     println!("{}", interpreter);
     interpreter.run();
+    println!("{}", interpreter);
 
     Ok(())
 }
