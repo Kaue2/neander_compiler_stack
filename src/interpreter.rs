@@ -2,8 +2,8 @@ use std::error::Error;
 use std::fmt::{self, write};
 use std::fs::{self};
 
-type InstructionFn = fn(&mut Interpreter);
-struct ProgramCounter(u8);
+type InstructionFn = fn(&mut Interpreter, addr: usize);
+struct ProgramCounter(u16);
 
 impl ProgramCounter {
     fn usize(&self) -> usize {
@@ -11,7 +11,7 @@ impl ProgramCounter {
     }
 
     fn increment(&mut self) {
-        self.0.saturating_add(2);
+        self.0 = self.0.saturating_add(2);
     }
 }
 
@@ -24,27 +24,30 @@ pub struct Interpreter {
     should_stop: bool,
 }
 
-fn nop(_i: &mut Interpreter) {}
+fn nop(_i: &mut Interpreter, _addr: usize) {
+    println!("função nop chamada");
+    return;
+}
 
-fn sta(_i: &mut Interpreter) {}
+fn sta(_i: &mut Interpreter, addr: usize) {}
 
-fn lda(_i: &mut Interpreter) {}
+fn lda(_i: &mut Interpreter, addr: usize) {}
 
-fn add(_i: &mut Interpreter) {}
+fn add(_i: &mut Interpreter, addr: usize) {}
 
-fn or(_i: &mut Interpreter) {}
+fn or(_i: &mut Interpreter, addr: usize) {}
 
-fn and(_i: &mut Interpreter) {}
+fn and(_i: &mut Interpreter, addr: usize) {}
 
-fn not(_i: &mut Interpreter) {}
+fn not(_i: &mut Interpreter, addr: usize) {}
 
-fn jmp(_i: &mut Interpreter) {}
+fn jmp(_i: &mut Interpreter, addr: usize) {}
 
-fn jn(_i: &mut Interpreter) {}
+fn jn(_i: &mut Interpreter, addr: usize) {}
 
-fn jz(_i: &mut Interpreter) {}
+fn jz(_i: &mut Interpreter, addr: usize) {}
 
-fn hlt(_i: &mut Interpreter) {}
+fn hlt(_i: &mut Interpreter, addr: usize) {}
 
 impl Interpreter {
     fn new(mem: Vec<u8>) -> Self {
@@ -58,34 +61,46 @@ impl Interpreter {
         }
     }
 
-    fn get_rules(opcode: u8) -> InstructionFn {
+    fn get_rules(opcode: u8) -> Option<InstructionFn> {
         match opcode {
-            0 => nop,
-            16 => sta,
-            32 => lda,
-            48 => add,
-            64 => or,
-            80 => and,
-            96 => not,
-            128 => jmp,
-            144 => jn,
-            160 => jz,
-            240 => hlt,
-            _ => panic!("Instrução não conhecida."),
+            0 => Some(nop),
+            16 => Some(sta),
+            32 => Some(lda),
+            48 => Some(add),
+            64 => Some(or),
+            80 => Some(and),
+            96 => Some(not),
+            128 => Some(jmp),
+            144 => Some(jn),
+            160 => Some(jz),
+            240 => Some(hlt),
+            _ => None,
         }
     }
 
     fn fetch(&mut self) -> u8 {
-        let opcode = self.mem[self.pc.usize()];
+        let code = self.mem[self.pc.usize()];
         self.pc.increment();
-        opcode
+        code
     }
 
     fn run(&mut self) {
         while (self.pc.usize() * 2) < self.mem.len() && self.should_stop != true {
+            // println!("pc: {}", self.pc.usize() * 2);
             let opcode = self.fetch();
 
-            if let Some(function) = Interpreter::get_rules(opcode) {}
+            if let Some(function) = Interpreter::get_rules(opcode) {
+                if opcode == 0 || opcode == 240 {
+                    function(self, 0);
+                    continue;
+                }
+
+                let addr = ((self.fetch() * 2) + 4) as usize;
+                function(self, addr);
+            } else {
+                eprintln!("Instrução inválida: {}", opcode);
+                self.should_stop = true;
+            }
         }
     }
 }
@@ -107,8 +122,9 @@ impl fmt::Display for Interpreter {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let data = fs::read("file.bin")?;
-    let interpreter = Interpreter::new(data);
+    let mut interpreter = Interpreter::new(data);
     println!("{}", interpreter);
+    interpreter.run();
 
     Ok(())
 }
