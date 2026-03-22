@@ -200,9 +200,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     if let Some(program_counter) = cli.pc {
         interpreter = Interpreter::set_pc(interpreter, program_counter);
     }
-    println!("{}", interpreter);
     interpreter.run();
-    println!("{}", interpreter);
 
     Ok(())
 }
