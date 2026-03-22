@@ -38,7 +38,7 @@ pub struct Token {
 }
 
 pub struct Lexer {
-    stream: Vec<u8>,
+    stream: Vec<char>,
     pub tokens: Vec<Token>,
     pub position: usize,
     pub ch: char,
@@ -58,35 +58,32 @@ impl Lexer {
         }
     }
 
-    fn set_stream(mut self, stream: Vec<u8>) -> Self {
-        self.stream = stream;
+    fn set_stream(mut self, stream: String) -> Self {
+        self.stream = stream.chars().collect();
         return self;
     }
 
-    fn is_char(ch: u8) -> bool {
-        return (ch >= 97 && ch <= 122) || (ch >= 65 && ch <= 90);
-    }
-
-    fn is_num(ch: u8) -> bool {
-        return ch >= 48 && ch <= 57;
-    }
-
-    fn run(&mut self) {
-        while self.position < self.stream.len() && self.error.is_some() {
+    fn run(&mut self) -> Result<(), LexerError> {
+        while self.position < self.stream.len() {
             let crr_char = self.stream[self.position];
             match crr_char {
                 // ignorar espaços
                 // pular comentários
                 _ => {
-                    let error = format!("Unexpected symbol {} {}", self.line, crr_char);
-                    self.error = Some(LexerError::new(error));
+                    let error_str =
+                        format!("Unexpected symbol \"{}\" at line {}", crr_char, self.line);
+                    let error = LexerError::new(error_str);
+                    self.error = Some(error.clone());
+                    return Err(error);
                 }
             }
         }
+
+        Ok(())
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LexerError {
     message: String,
 }
@@ -105,4 +102,14 @@ impl fmt::Display for LexerError {
 
 impl Error for LexerError {}
 
-fn main() {}
+fn main() -> Result<(), Box<dyn Error>> {
+    let data = std::fs::read_to_string("utils/asm.txt").expect("ERROR: unable to read file.");
+    let mut lexer = Lexer::new().set_stream(data);
+    lexer.run();
+
+    if let Some(e) = lexer.error {
+        println!("{}", e);
+    }
+
+    Ok(())
+}
