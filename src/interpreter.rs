@@ -19,17 +19,20 @@ impl ProgramCounter {
 
 pub struct Interpreter {
     pub acc: u8,
-    pub pc: ProgramCounter,
     pub zero_f: bool,
     pub negative_f: bool,
     pub mem: Vec<u8>,
+    pc: ProgramCounter,
     should_stop: bool,
 }
 
 #[derive(Parser)]
 struct Cli {
     #[arg(long, short)]
-    name: String,
+    path: Option<String>,
+
+    #[arg(long, short)]
+    pc: Option<u16>,
 }
 
 fn nop(_i: &mut Interpreter, _addr: usize) {
@@ -113,6 +116,11 @@ impl Interpreter {
         return self;
     }
 
+    fn set_pc(mut self, pc: u16) -> Self {
+        self.pc.0 = pc;
+        return self;
+    }
+
     fn get_rules(opcode: u8) -> Option<InstructionFn> {
         match opcode {
             0 => Some(nop),
@@ -175,8 +183,23 @@ impl fmt::Display for Interpreter {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let cli = Cli::parse();
-    let data = fs::read("file.bin")?;
+    let data: Vec<u8>;
+    let mut buff = String::new();
+
+    if let Some(p) = cli.path {
+        println!("{}", p);
+        data = fs::read(p)?;
+    } else {
+        io::stdin().read_line(&mut buff)?;
+        let file_name = buff.trim().replace("\"", "");
+        data = fs::read(file_name)?;
+    }
+
     let mut interpreter = Interpreter::new().set_mem(data);
+
+    if let Some(program_counter) = cli.pc {
+        interpreter = Interpreter::set_pc(interpreter, program_counter);
+    }
     println!("{}", interpreter);
     interpreter.run();
     println!("{}", interpreter);
