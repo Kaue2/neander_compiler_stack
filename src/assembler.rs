@@ -63,18 +63,62 @@ impl Lexer {
         return self;
     }
 
+    fn consume(&mut self) -> Option<char> {
+        if self.position < self.stream.len() {
+            self.ch = self.stream[self.position];
+            self.position += 1;
+            return Some(self.ch);
+        } else {
+            return None;
+        }
+    }
+
+    // funcao para avancar, retorna um Option<char>
+
     fn run(&mut self) -> Result<(), LexerError> {
-        while self.position < self.stream.len() {
-            let crr_char = self.stream[self.position];
-            match crr_char {
+        // enquanto funcao avancar funcionar continua
+        while let Some(c) = self.consume() {
+            match c {
                 // ignorar espaços
                 // pular comentários
+                ' ' | '\t' | '\r' => {
+                    break;
+                }
+                '\n' => {
+                    self.line += 1;
+                    break;
+                }
+                '@' => {
+                    break;
+                }
+                ':' => {
+                    break;
+                }
+                '!' => {
+                    break;
+                }
+                ';' => {
+                    break;
+                }
+                '-' => {
+                    break;
+                }
+                '=' => {
+                    break;
+                }
+                ',' => {
+                    break;
+                }
                 _ => {
-                    let error_str =
-                        format!("Unexpected symbol \"{}\" at line {}", crr_char, self.line);
-                    let error = LexerError::new(error_str);
-                    self.error = Some(error.clone());
-                    return Err(error);
+                    if c.is_alphabetic() {
+                    } else if c.is_numeric() {
+                    } else {
+                        let error_str =
+                            format!("Unexpected symbol \"{}\" at line {}", c, self.line);
+                        let error = LexerError::new(error_str);
+                        self.error = Some(error.clone());
+                        return Err(error);
+                    }
                 }
             }
         }
