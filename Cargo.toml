@@ -7,5 +7,9 @@ edition = "2024"
 name = "interpreter"
 path = "src/interpreter.rs"
 
+[[bin]]
+name = "assembler"
+path = "src/assembler.rs"
+
 [dependencies]
 clap = { version = "4.6.0", features = ["derive"] }
