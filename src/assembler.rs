@@ -24,8 +24,21 @@ enum TokenType {
     TokenEquals,
     TokenColon,
     TokenArrow,
+    TokenComma,
 }
 
-pub struct Token {}
+pub struct Token {
+    kind: TokenType,
+    lexeme: String,
+    literal: Option<String>,
+    line: u16,
+}
+
+pub struct Lexer {
+    stream: Vec<u8>,
+    pub tokens: Vec<Token>,
+    pub position: usize,
+    pub ch: char,
+}
 
 fn main() {}
