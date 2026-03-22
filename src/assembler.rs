@@ -2,25 +2,28 @@ enum TokenType {
     // Delimitadores Iniciadores
     TokenSetup,
     TokenData,
-    TokenInicio,
+    TokenBeginning,
 
     // Delimitadores Fim
-    TokemFim,
+    TokemEnd,
 
     // Variaveis
     TokenVar,
 
     // Instrucoes
-    TokenInstrucaoSetUp,
-    TokenInstrucao,
+    TokenInstructionSetUp,
+    TokenInstruction,
+
+    // Enderecos
+    TokenAddress,
 
     // Literais
     TokenNum,
 
     // Simbolos unicos
-    TokenIgual,
-    TokenDoisPontos,
-    TokenSeta,
+    TokenEquals,
+    TokenColon,
+    TokenArrow,
 }
 
 pub struct Token {}
