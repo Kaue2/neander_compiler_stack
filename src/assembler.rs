@@ -1,3 +1,6 @@
+use std::error::Error;
+use std::fmt;
+
 enum TokenType {
     // Delimitadores Iniciadores
     TokenSetup,
@@ -39,7 +42,8 @@ pub struct Lexer {
     pub tokens: Vec<Token>,
     pub position: usize,
     pub ch: char,
-    pub error: Option<String>,
+    pub error: Option<LexerError>,
+    pub line: usize,
 }
 
 impl Lexer {
@@ -50,6 +54,7 @@ impl Lexer {
             position: 0,
             ch: '\0',
             error: None,
+            line: 0,
         }
     }
 
@@ -67,15 +72,37 @@ impl Lexer {
     }
 
     fn run(&mut self) {
-        while self.position < self.stream.len() && self.error == None {
+        while self.position < self.stream.len() && self.error.is_some() {
             let crr_char = self.stream[self.position];
             match crr_char {
                 // ignorar espaços
                 // pular comentários
-                _ => {}
+                _ => {
+                    let error = format!("Unexpected symbol {} {}", self.line, crr_char);
+                    self.error = Some(LexerError::new(error));
+                }
             }
         }
     }
 }
+
+#[derive(Debug)]
+pub struct LexerError {
+    message: String,
+}
+
+impl LexerError {
+    fn new(error: String) -> Self {
+        LexerError { message: error }
+    }
+}
+
+impl fmt::Display for LexerError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "ERROR: {}", self.message)
+    }
+}
+
+impl Error for LexerError {}
 
 fn main() {}
