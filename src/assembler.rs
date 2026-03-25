@@ -11,7 +11,8 @@ enum TokenType {
     TokemEnd,
 
     // Variaveis
-    TokenVar,
+    TokenIdentfier,
+    TokenVariable,
 
     // Instrucoes
     TokenInstructionSetUp,
@@ -28,13 +29,17 @@ enum TokenType {
     TokenColon,
     TokenArrow,
     TokenComma,
+    TokenSpace,
+    TokenTab,
+    TokenSlashR,
+    TokenNewLine,
 }
 
 pub struct Token {
     kind: TokenType,
     lexeme: String,
     literal: Option<String>,
-    line: u16,
+    line: usize,
 }
 
 pub struct Lexer {
@@ -73,42 +78,109 @@ impl Lexer {
         }
     }
 
+    fn create_token(kind: TokenType, lexeme: String, literal: String, line: usize) -> Token {
+        Token {
+            kind,
+            lexeme,
+            literal: Some(literal),
+            line,
+        }
+    }
+
     // funcao para avancar, retorna um Option<char>
 
     fn run(&mut self) -> Result<(), LexerError> {
         // enquanto funcao avancar funcionar continua
         while let Some(c) = self.consume() {
+            if self.error.is_some() {
+                break;
+            }
+
             match c {
                 // ignorar espaços
                 // pular comentários
-                ' ' | '\t' | '\r' => {
-                    break;
-                }
+                ' ' | '\t' | '\r' => match c {
+                    ' ' => {
+                        self.tokens.push(Lexer::create_token(
+                            TokenType::TokenSpace,
+                            ' '.to_string(),
+                            ' '.to_string(),
+                            self.line,
+                        ));
+                    }
+                    '\t' => {
+                        self.tokens.push(Lexer::create_token(
+                            TokenType::TokenTab,
+                            '\t'.to_string(),
+                            '\t'.to_string(),
+                            self.line,
+                        ));
+                    }
+                    '\r' => {
+                        self.tokens.push(Lexer::create_token(
+                            TokenType::TokenSlashR,
+                            '\r'.to_string(),
+                            '\r'.to_string(),
+                            self.line,
+                        ));
+                    }
+                    _ => {
+                        let error_str = format!("Error: invalid char {} at {}", c, self.line);
+                        let error = LexerError::new(error_str);
+                        self.error = Some(error.clone());
+                        return Err(error);
+                    }
+                },
                 '\n' => {
+                    self.tokens.push(Lexer::create_token(
+                        TokenType::TokenNewLine,
+                        '\n'.to_string(),
+                        '\n'.to_string(),
+                        self.line,
+                    ));
                     self.line += 1;
-                    break;
                 }
                 '@' => {
-                    break;
+                    let mut lexeme = String::new();
+                    lexeme.push(c);
+
+                    if self.position < self.stream.len()
+                        && self.stream[self.position].is_alphabetic()
+                    {
+                        lexeme.push(self.stream[self.position]);
+                        self.position += 1;
+
+                        while self.position < self.stream.len() {
+                            let next_char = self.stream[self.position];
+
+                            if next_char.is_alphabetic() || next_char == '_' {
+                                lexeme.push(next_char);
+                                self.position += 1;
+                            } else {
+                                break;
+                            }
+                        }
+
+                        self.tokens.push(Lexer::create_token(
+                            TokenType::TokenVariable,
+                            lexeme.clone(),
+                            lexeme,
+                            self.line,
+                        ));
+                    } else {
+                        let error_str =
+                            format!("Error: invalid format after {} at line {}", c, self.line);
+                        let error = LexerError::new(error_str);
+                        self.error = Some(error.clone());
+                        return Err(error);
+                    }
                 }
-                ':' => {
-                    break;
-                }
-                '!' => {
-                    break;
-                }
-                ';' => {
-                    break;
-                }
-                '-' => {
-                    break;
-                }
-                '=' => {
-                    break;
-                }
-                ',' => {
-                    break;
-                }
+                ':' => {}
+                '!' => {}
+                ';' => {}
+                '-' => {}
+                '=' => {}
+                ',' => {}
                 _ => {
                     if c.is_alphabetic() {
                     } else if c.is_numeric() {
