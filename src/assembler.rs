@@ -1,6 +1,5 @@
 use std::error::Error;
 use std::fmt;
-use std::fmt::Display;
 
 #[derive(Debug, Clone, Copy)]
 enum TokenType {
@@ -124,6 +123,14 @@ impl Lexer {
         }
     }
 
+    fn peek(&self) -> Option<char> {
+        if self.position < self.stream.len() {
+            Some(self.stream[self.position])
+        } else {
+            None
+        }
+    }
+
     fn get_reserved_token(lexeme: &str) -> TokenType {
         let kind = match lexeme {
             "data" | "program" | "end" => TokenType::TokenLabel,
@@ -164,12 +171,10 @@ impl Lexer {
                         lexeme.push(self.stream[self.position]);
                         self.position += 1;
 
-                        while self.position < self.stream.len() {
-                            let next_char = self.stream[self.position];
-
+                        while let Some(next_char) = self.peek() {
                             if next_char.is_alphanumeric() || next_char == '_' {
                                 lexeme.push(next_char);
-                                self.position += 1;
+                                _ = self.consume();
                             } else {
                                 break;
                             }
@@ -254,12 +259,10 @@ impl Lexer {
                         let mut lexeme = String::new();
                         lexeme.push(c);
 
-                        while self.position < self.stream.len() {
-                            let ch = self.stream[self.position];
-
+                        while let Some(ch) = self.peek() {
                             if ch.is_alphanumeric() || ch == '_' {
                                 lexeme.push(ch);
-                                self.position += 1;
+                                _ = self.consume(); // consome o char q acabamos de ler
                             } else {
                                 break;
                             }
@@ -271,11 +274,10 @@ impl Lexer {
                         let mut lexeme = String::new();
                         lexeme.push(c);
 
-                        while self.position < self.stream.len() {
-                            let ch = self.stream[self.position];
+                        while let Some(ch) = self.peek() {
                             if ch.is_numeric() {
                                 lexeme.push(ch);
-                                self.position += 1;
+                                _ = self.consume();
                             } else {
                                 break;
                             }
