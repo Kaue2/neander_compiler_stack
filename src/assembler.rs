@@ -20,7 +20,9 @@ enum TokenType {
 
     // Simbolos unicos
     TokenEquals,
+    TokenBang,
     TokenColon,
+    TokenSemiColon,
     TokenArrow,
     TokenComma,
     TokenSpace,
@@ -39,6 +41,7 @@ impl fmt::Display for TokenType {
             TokenType::TokenInstruction => "Instruction",
             TokenType::TokenNum => "Number",
             TokenType::TokenEquals => "Equals",
+            TokenType::TokenBang => "Bang",
             TokenType::TokenColon => "Colon",
             TokenType::TokenArrow => "Arrow",
             TokenType::TokenComma => "Comma",
@@ -200,9 +203,33 @@ impl Lexer {
                         self.error = Some(error);
                     }
                 }
-                ':' => {}
-                '!' => {}
-                ';' => {}
+                ':' => {
+                    let token = Lexer::create_token(
+                        TokenType::TokenColon,
+                        ':'.to_string(),
+                        ':'.to_string(),
+                        self.line,
+                    );
+                    self.tokens.push(token);
+                }
+                '!' => {
+                    let token = Lexer::create_token(
+                        TokenType::TokenBang,
+                        '!'.to_string(),
+                        '!'.to_string(),
+                        self.line,
+                    );
+                    self.tokens.push(token);
+                }
+                ';' => {
+                    let token = Lexer::create_token(
+                        TokenType::TokenSemiColon,
+                        ';'.to_string(),
+                        ';'.to_string(),
+                        self.line,
+                    );
+                    self.tokens.push(token);
+                }
                 '-' => {
                     if self.stream[self.position] == '>' {
                         let mut lexeme = String::new();
@@ -215,11 +242,27 @@ impl Lexer {
                             self.line,
                         );
                         self.tokens.push(token);
-                        self.position += 1;
+                        self.position += 1; // consumindo >
                     }
                 }
-                '=' => {}
-                ',' => {}
+                '=' => {
+                    let token = Lexer::create_token(
+                        TokenType::TokenEquals,
+                        "=".to_string(),
+                        "=".to_string(),
+                        self.line,
+                    );
+                    self.tokens.push(token);
+                }
+                ',' => {
+                    let token = Lexer::create_token(
+                        TokenType::TokenComma,
+                        ','.to_string(),
+                        ','.to_string(),
+                        self.line,
+                    );
+                    self.tokens.push(token);
+                }
                 _ => {
                     if c.is_alphabetic() {
                     } else if c.is_numeric() {
