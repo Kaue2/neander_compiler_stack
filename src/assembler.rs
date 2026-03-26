@@ -5,12 +5,7 @@ use std::fmt::Display;
 #[derive(Debug, Clone, Copy)]
 enum TokenType {
     // Delimitadores Iniciadores
-    TokenSetup,
-    TokenData,
-    TokenBeginning,
-
-    // Delimitadores Fim
-    TokemEnd,
+    TokenLabel,
 
     // Variaveis
     TokenIdentfier,
@@ -19,9 +14,6 @@ enum TokenType {
     // Instrucoes
     TokenInstructionSetUp,
     TokenInstruction,
-
-    // Enderecos
-    TokenAddress,
 
     // Literais
     TokenNum,
@@ -40,15 +32,11 @@ enum TokenType {
 impl fmt::Display for TokenType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let name = match self {
-            TokenType::TokenSetup => "Setup",
-            TokenType::TokenData => "Data",
-            TokenType::TokenBeginning => "Beginning",
-            TokenType::TokemEnd => "End",
+            TokenType::TokenLabel => "Label",
             TokenType::TokenIdentfier => "Identfier",
             TokenType::TokenVariable => "Variable",
             TokenType::TokenInstructionSetUp => "Instruction Setup",
             TokenType::TokenInstruction => "Instruction",
-            TokenType::TokenAddress => "Address",
             TokenType::TokenNum => "Number",
             TokenType::TokenEquals => "Equals",
             TokenType::TokenColon => "Colon",
@@ -75,8 +63,10 @@ impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Token: \nTipo: {} \nLexeme: {} \nLine: {}",
-            self.kind, self.lexeme, self.line
+            "Token -> \n\tTipo: {} \n\tLexeme: {} \n\tLine: {}",
+            self.kind,
+            self.lexeme.escape_debug(),
+            self.line
         )
     }
 }
@@ -98,7 +88,7 @@ impl Lexer {
             position: 0,
             ch: '\0',
             error: None,
-            line: 0,
+            line: 1,
         }
     }
 
@@ -189,7 +179,7 @@ impl Lexer {
                         while self.position < self.stream.len() {
                             let next_char = self.stream[self.position];
 
-                            if next_char.is_alphabetic() || next_char == '_' {
+                            if next_char.is_alphanumeric() || next_char == '_' {
                                 lexeme.push(next_char);
                                 self.position += 1;
                             } else {
@@ -213,7 +203,21 @@ impl Lexer {
                 ':' => {}
                 '!' => {}
                 ';' => {}
-                '-' => {}
+                '-' => {
+                    if self.stream[self.position] == '>' {
+                        let mut lexeme = String::new();
+                        lexeme.push(c);
+                        lexeme.push(self.stream[self.position]);
+                        let token = Lexer::create_token(
+                            TokenType::TokenArrow,
+                            lexeme.clone(),
+                            lexeme,
+                            self.line,
+                        );
+                        self.tokens.push(token);
+                        self.position += 1;
+                    }
+                }
                 '=' => {}
                 ',' => {}
                 _ => {
@@ -254,6 +258,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let data = std::fs::read_to_string("utils/asm.txt").expect("ERROR: unable to read file.");
     let mut lexer = Lexer::new().set_stream(data);
     lexer.run();
+
+    for token in lexer.tokens {
+        println!("{}", token);
+    }
 
     if let Some(e) = lexer.error {
         println!("{}", e);

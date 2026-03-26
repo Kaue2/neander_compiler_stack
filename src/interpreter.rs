@@ -1,6 +1,6 @@
 use clap::Parser;
 use std::error::Error;
-use std::fmt::{self, write};
+use std::fmt::{self};
 use std::fs::{self};
 use std::{env, io};
 
