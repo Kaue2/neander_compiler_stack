@@ -1,6 +1,8 @@
 use std::error::Error;
 use std::fmt;
+use std::fmt::Display;
 
+#[derive(Debug, Clone, Copy)]
 enum TokenType {
     // Delimitadores Iniciadores
     TokenSetup,
@@ -35,11 +37,48 @@ enum TokenType {
     TokenNewLine,
 }
 
+impl fmt::Display for TokenType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let name = match self {
+            TokenType::TokenSetup => "Setup",
+            TokenType::TokenData => "Data",
+            TokenType::TokenBeginning => "Beginning",
+            TokenType::TokemEnd => "End",
+            TokenType::TokenIdentfier => "Identfier",
+            TokenType::TokenVariable => "Variable",
+            TokenType::TokenInstructionSetUp => "Instruction Setup",
+            TokenType::TokenInstruction => "Instruction",
+            TokenType::TokenAddress => "Address",
+            TokenType::TokenNum => "Number",
+            TokenType::TokenEquals => "Equals",
+            TokenType::TokenColon => "Colon",
+            TokenType::TokenArrow => "Arrow",
+            TokenType::TokenComma => "Comma",
+            TokenType::TokenSpace => "Space",
+            TokenType::TokenTab => "Tab",
+            TokenType::TokenSlashR => "Return of line",
+            TokenType::TokenNewLine => "New Line",
+        };
+
+        write!(f, "{}", name)
+    }
+}
+
 pub struct Token {
     kind: TokenType,
     lexeme: String,
     literal: Option<String>,
     line: usize,
+}
+
+impl fmt::Display for Token {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Token: \nTipo: {} \nLexeme: {} \nLine: {}",
+            self.kind, self.lexeme, self.line
+        )
+    }
 }
 
 pub struct Lexer {
@@ -87,9 +126,7 @@ impl Lexer {
         }
     }
 
-    // funcao para avancar, retorna um Option<char>
-
-    fn run(&mut self) -> Result<(), LexerError> {
+    fn run(&mut self) {
         // enquanto funcao avancar funcionar continua
         while let Some(c) = self.consume() {
             if self.error.is_some() {
@@ -127,8 +164,7 @@ impl Lexer {
                     _ => {
                         let error_str = format!("Error: invalid char {} at {}", c, self.line);
                         let error = LexerError::new(error_str);
-                        self.error = Some(error.clone());
-                        return Err(error);
+                        self.error = Some(error);
                     }
                 },
                 '\n' => {
@@ -171,8 +207,7 @@ impl Lexer {
                         let error_str =
                             format!("Error: invalid format after {} at line {}", c, self.line);
                         let error = LexerError::new(error_str);
-                        self.error = Some(error.clone());
-                        return Err(error);
+                        self.error = Some(error);
                     }
                 }
                 ':' => {}
@@ -188,14 +223,11 @@ impl Lexer {
                         let error_str =
                             format!("Unexpected symbol \"{}\" at line {}", c, self.line);
                         let error = LexerError::new(error_str);
-                        self.error = Some(error.clone());
-                        return Err(error);
+                        self.error = Some(error);
                     }
                 }
             }
         }
-
-        Ok(())
     }
 }
 
