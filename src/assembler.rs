@@ -29,6 +29,7 @@ enum TokenType {
     TokenTab,
     TokenSlashR,
     TokenNewLine,
+    TokenMinus,
 }
 
 impl fmt::Display for TokenType {
@@ -40,6 +41,7 @@ impl fmt::Display for TokenType {
             TokenType::TokenSemicolon => "Semi",
             TokenType::TokenInstructionSetUp => "Instruction Setup",
             TokenType::TokenInstruction => "Instruction",
+            TokenType::TokenMinus => "Minus",
             TokenType::TokenNum => "Number",
             TokenType::TokenEquals => "Equals",
             TokenType::TokenBang => "Bang",
@@ -140,37 +142,9 @@ impl Lexer {
             match c {
                 // ignorar espaços
                 // pular comentários
-                ' ' | '\t' | '\r' => match c {
-                    ' ' => {
-                        self.tokens.push(Token::new(
-                            TokenType::TokenSpace,
-                            ' '.to_string(),
-                            ' '.to_string(),
-                            self.line,
-                        ));
-                    }
-                    '\t' => {
-                        self.tokens.push(Token::new(
-                            TokenType::TokenTab,
-                            '\t'.to_string(),
-                            '\t'.to_string(),
-                            self.line,
-                        ));
-                    }
-                    '\r' => {
-                        self.tokens.push(Token::new(
-                            TokenType::TokenSlashR,
-                            '\r'.to_string(),
-                            '\r'.to_string(),
-                            self.line,
-                        ));
-                    }
-                    _ => {
-                        let error_str = format!("Error: invalid char {} at {}", c, self.line);
-                        let error = LexerError::new(error_str);
-                        self.error = Some(error);
-                    }
-                },
+                ' ' | '\t' | '\r' => {
+                    continue;
+                }
                 '\n' => {
                     self.tokens.push(Token::new(
                         TokenType::TokenNewLine,
@@ -239,7 +213,7 @@ impl Lexer {
                     ));
                 }
                 '-' => {
-                    if self.stream[self.position] == '>' {
+                    if self.position < self.stream.len() && self.stream[self.position] == '>' {
                         let mut lexeme = String::new();
                         lexeme.push(c);
                         lexeme.push(self.stream[self.position]);
@@ -250,6 +224,13 @@ impl Lexer {
                             self.line,
                         ));
                         self.position += 1; // consumindo >
+                    } else {
+                        self.tokens.push(Token::new(
+                            TokenType::TokenMinus,
+                            '-'.to_string(),
+                            '-'.to_string(),
+                            self.line,
+                        ));
                     }
                 }
                 '=' => {
@@ -276,7 +257,7 @@ impl Lexer {
                         while self.position < self.stream.len() {
                             let ch = self.stream[self.position];
 
-                            if ch.is_alphabetic() {
+                            if ch.is_alphanumeric() || ch == '_' {
                                 lexeme.push(ch);
                                 self.position += 1;
                             } else {
