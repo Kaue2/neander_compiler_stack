@@ -63,6 +63,17 @@ pub struct Token {
     line: usize,
 }
 
+impl Token {
+    fn new(kind: TokenType, lexeme: String, literal: String, line: usize) -> Self {
+        Token {
+            kind,
+            lexeme,
+            literal: Some(literal),
+            line,
+        }
+    }
+}
+
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
@@ -111,15 +122,6 @@ impl Lexer {
         }
     }
 
-    fn create_token(kind: TokenType, lexeme: String, literal: String, line: usize) -> Token {
-        Token {
-            kind,
-            lexeme,
-            literal: Some(literal),
-            line,
-        }
-    }
-
     fn get_reserved_token(lexeme: &str) -> TokenType {
         let kind = match lexeme {
             "data" | "program" | "end" => TokenType::TokenLabel,
@@ -140,7 +142,7 @@ impl Lexer {
                 // pular comentários
                 ' ' | '\t' | '\r' => match c {
                     ' ' => {
-                        self.tokens.push(Lexer::create_token(
+                        self.tokens.push(Token::new(
                             TokenType::TokenSpace,
                             ' '.to_string(),
                             ' '.to_string(),
@@ -148,7 +150,7 @@ impl Lexer {
                         ));
                     }
                     '\t' => {
-                        self.tokens.push(Lexer::create_token(
+                        self.tokens.push(Token::new(
                             TokenType::TokenTab,
                             '\t'.to_string(),
                             '\t'.to_string(),
@@ -156,7 +158,7 @@ impl Lexer {
                         ));
                     }
                     '\r' => {
-                        self.tokens.push(Lexer::create_token(
+                        self.tokens.push(Token::new(
                             TokenType::TokenSlashR,
                             '\r'.to_string(),
                             '\r'.to_string(),
@@ -170,7 +172,7 @@ impl Lexer {
                     }
                 },
                 '\n' => {
-                    self.tokens.push(Lexer::create_token(
+                    self.tokens.push(Token::new(
                         TokenType::TokenNewLine,
                         '\n'.to_string(),
                         '\n'.to_string(),
@@ -199,7 +201,7 @@ impl Lexer {
                             }
                         }
 
-                        self.tokens.push(Lexer::create_token(
+                        self.tokens.push(Token::new(
                             TokenType::TokenVariable,
                             lexeme.clone(),
                             lexeme,
@@ -213,64 +215,58 @@ impl Lexer {
                     }
                 }
                 ':' => {
-                    let token = Lexer::create_token(
+                    self.tokens.push(Token::new(
                         TokenType::TokenColon,
                         ':'.to_string(),
                         ':'.to_string(),
                         self.line,
-                    );
-                    self.tokens.push(token);
+                    ));
                 }
                 '!' => {
-                    let token = Lexer::create_token(
+                    self.tokens.push(Token::new(
                         TokenType::TokenBang,
                         '!'.to_string(),
                         '!'.to_string(),
                         self.line,
-                    );
-                    self.tokens.push(token);
+                    ));
                 }
                 ';' => {
-                    let token = Lexer::create_token(
+                    self.tokens.push(Token::new(
                         TokenType::TokenSemicolon,
                         ';'.to_string(),
                         ';'.to_string(),
                         self.line,
-                    );
-                    self.tokens.push(token);
+                    ));
                 }
                 '-' => {
                     if self.stream[self.position] == '>' {
                         let mut lexeme = String::new();
                         lexeme.push(c);
                         lexeme.push(self.stream[self.position]);
-                        let token = Lexer::create_token(
+                        self.tokens.push(Token::new(
                             TokenType::TokenArrow,
                             lexeme.clone(),
                             lexeme,
                             self.line,
-                        );
-                        self.tokens.push(token);
+                        ));
                         self.position += 1; // consumindo >
                     }
                 }
                 '=' => {
-                    let token = Lexer::create_token(
+                    self.tokens.push(Token::new(
                         TokenType::TokenEquals,
                         "=".to_string(),
                         "=".to_string(),
                         self.line,
-                    );
-                    self.tokens.push(token);
+                    ));
                 }
                 ',' => {
-                    let token = Lexer::create_token(
+                    self.tokens.push(Token::new(
                         TokenType::TokenComma,
                         ','.to_string(),
                         ','.to_string(),
                         self.line,
-                    );
-                    self.tokens.push(token);
+                    ));
                 }
                 _ => {
                     if c.is_alphabetic() {
@@ -288,8 +284,8 @@ impl Lexer {
                             }
                         }
                         let kind = Lexer::get_reserved_token(&lexeme);
-                        let token = Lexer::create_token(kind, lexeme.clone(), lexeme, self.line);
-                        self.tokens.push(token);
+                        self.tokens
+                            .push(Token::new(kind, lexeme.clone(), lexeme, self.line));
                     } else if c.is_numeric() {
                         let mut lexeme = String::new();
                         lexeme.push(c);
@@ -304,13 +300,12 @@ impl Lexer {
                             }
                         }
 
-                        let token = Lexer::create_token(
+                        self.tokens.push(Token::new(
                             TokenType::TokenNum,
                             lexeme.clone(),
                             lexeme,
                             self.line,
-                        );
-                        self.tokens.push(token);
+                        ));
                     } else {
                         let error_str =
                             format!("Unexpected symbol \"{}\" at line {}", c, self.line);
