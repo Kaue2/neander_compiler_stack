@@ -22,7 +22,7 @@ enum TokenType {
     TokenEquals,
     TokenBang,
     TokenColon,
-    TokenSemiColon,
+    TokenSemicolon,
     TokenArrow,
     TokenComma,
     TokenSpace,
@@ -37,6 +37,7 @@ impl fmt::Display for TokenType {
             TokenType::TokenLabel => "Label",
             TokenType::TokenIdentfier => "Identfier",
             TokenType::TokenVariable => "Variable",
+            TokenType::TokenSemicolon => "Semi",
             TokenType::TokenInstructionSetUp => "Instruction Setup",
             TokenType::TokenInstruction => "Instruction",
             TokenType::TokenNum => "Number",
@@ -117,6 +118,14 @@ impl Lexer {
             literal: Some(literal),
             line,
         }
+    }
+
+    fn get_reserved_token(lexeme: &str) -> TokenType {
+        let kind = match lexeme {
+            "data" | "program" | "end" => TokenType::TokenLabel,
+            _ => TokenType::TokenIdentfier,
+        };
+        return kind;
     }
 
     fn run(&mut self) {
@@ -223,7 +232,7 @@ impl Lexer {
                 }
                 ';' => {
                     let token = Lexer::create_token(
-                        TokenType::TokenSemiColon,
+                        TokenType::TokenSemicolon,
                         ';'.to_string(),
                         ';'.to_string(),
                         self.line,
@@ -265,7 +274,43 @@ impl Lexer {
                 }
                 _ => {
                     if c.is_alphabetic() {
+                        let mut lexeme = String::new();
+                        lexeme.push(c);
+
+                        while self.position < self.stream.len() {
+                            let ch = self.stream[self.position];
+
+                            if ch.is_alphabetic() {
+                                lexeme.push(ch);
+                                self.position += 1;
+                            } else {
+                                break;
+                            }
+                        }
+                        let kind = Lexer::get_reserved_token(&lexeme);
+                        let token = Lexer::create_token(kind, lexeme.clone(), lexeme, self.line);
+                        self.tokens.push(token);
                     } else if c.is_numeric() {
+                        let mut lexeme = String::new();
+                        lexeme.push(c);
+
+                        while self.position < self.stream.len() {
+                            let ch = self.stream[self.position];
+                            if ch.is_numeric() {
+                                lexeme.push(ch);
+                                self.position += 1;
+                            } else {
+                                break;
+                            }
+                        }
+
+                        let token = Lexer::create_token(
+                            TokenType::TokenNum,
+                            lexeme.clone(),
+                            lexeme,
+                            self.line,
+                        );
+                        self.tokens.push(token);
                     } else {
                         let error_str =
                             format!("Unexpected symbol \"{}\" at line {}", c, self.line);
