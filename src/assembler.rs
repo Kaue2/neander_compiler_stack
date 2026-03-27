@@ -75,7 +75,7 @@ impl<'a> Token<'a> {
     }
 }
 
-impl fmt::Display for Token {
+impl<'a> fmt::Display for Token<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -89,7 +89,7 @@ impl fmt::Display for Token {
 
 pub struct Lexer<'a> {
     stream: &'a str,
-    pub tokens: Vec<Token>,
+    pub tokens: Vec<Token<'a>>,
     pub position: usize,
     pub ch: char,
     pub error: Option<LexerError>,
@@ -108,19 +108,14 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn consume(&mut self) -> Option<char> {
-        if self.position < self.stream.len() {
-            self.ch = self.stream[self.position];
-            self.position += 1;
-            return Some(self.ch);
-        } else {
-            return None;
-        }
+    fn peek(&self) -> Option<char> {
+        self.stream[self.position..].chars().next()
     }
 
-    fn peek(&self) -> Option<char> {
-        if self.position < self.stream.len() {
-            Some(self.stream[self.position])
+    fn consume(&mut self) -> Option<char> {
+        if let Some(c) = self.peek() {
+            self.position += c.len_utf8();
+            Some(c)
         } else {
             None
         }
@@ -148,39 +143,38 @@ impl<'a> Lexer<'a> {
                     continue;
                 }
                 '\n' => {
+                    let lexeme = &self.stream[self.position..self.position];
                     self.tokens.push(Token::new(
                         TokenType::TokenNewLine,
-                        '\n'.to_string(),
-                        '\n'.to_string(),
+                        lexeme,
+                        lexeme,
                         self.line,
                     ));
                     self.line += 1;
                 }
                 '@' => {
-                    let mut lexeme = String::new();
-                    lexeme.push(c);
+                    let start_pos = self.position - 1;
 
-                    if self.position < self.stream.len()
-                        && self.stream[self.position].is_alphabetic()
-                    {
-                        lexeme.push(self.stream[self.position]);
-                        self.position += 1;
+                    if let Some(next_char) = self.peek() {
+                        if next_char.is_alphabetic() {
+                            self.consume();
 
-                        while let Some(next_char) = self.peek() {
-                            if next_char.is_alphanumeric() || next_char == '_' {
-                                lexeme.push(next_char);
-                                _ = self.consume();
-                            } else {
-                                break;
+                            while let Some(c) = self.peek() {
+                                if c.is_alphabetic() {
+                                    self.consume();
+                                } else {
+                                    break;
+                                }
                             }
-                        }
 
-                        self.tokens.push(Token::new(
-                            TokenType::TokenVariable,
-                            lexeme.clone(),
-                            lexeme,
-                            self.line,
-                        ));
+                            let lexeme = &self.stream[start_pos..self.position];
+                            self.tokens.push(Token::new(
+                                TokenType::TokenVariable,
+                                lexeme,
+                                lexeme,
+                                self.line,
+                            ));
+                        }
                     } else {
                         let error_str =
                             format!("Error: invalid format after {} at line {}", c, self.line);
@@ -189,98 +183,92 @@ impl<'a> Lexer<'a> {
                     }
                 }
                 ':' => {
-                    self.tokens.push(Token::new(
-                        TokenType::TokenColon,
-                        ':'.to_string(),
-                        ':'.to_string(),
-                        self.line,
-                    ));
+                    let lexeme = &self.stream[self.position..self.position];
+                    self.tokens
+                        .push(Token::new(TokenType::TokenColon, lexeme, lexeme, self.line));
                 }
                 '!' => {
-                    self.tokens.push(Token::new(
-                        TokenType::TokenBang,
-                        '!'.to_string(),
-                        '!'.to_string(),
-                        self.line,
-                    ));
+                    let lexeme = &self.stream[self.position..self.position];
+                    self.tokens
+                        .push(Token::new(TokenType::TokenBang, lexeme, lexeme, self.line));
                 }
                 ';' => {
+                    let lexeme = &self.stream[self.position..self.position];
                     self.tokens.push(Token::new(
                         TokenType::TokenSemicolon,
-                        ';'.to_string(),
-                        ';'.to_string(),
+                        lexeme,
+                        lexeme,
                         self.line,
                     ));
                 }
                 '-' => {
-                    if self.position < self.stream.len() && self.stream[self.position] == '>' {
-                        let mut lexeme = String::new();
-                        lexeme.push(c);
-                        lexeme.push(self.stream[self.position]);
-                        self.tokens.push(Token::new(
-                            TokenType::TokenArrow,
-                            lexeme.clone(),
-                            lexeme,
-                            self.line,
-                        ));
-                        self.position += 1; // consumindo >
+                    let start_pos = self.position;
+                    if let Some(next_char) = self.peek() {
+                        if next_char == '>' {
+                            self.consume();
+
+                            let lexeme = &self.stream[start_pos..self.position];
+                            self.tokens.push(Token::new(
+                                TokenType::TokenArrow,
+                                lexeme,
+                                lexeme,
+                                self.line,
+                            ));
+                        }
                     } else {
+                        let lexeme = &self.stream[start_pos..self.position];
                         self.tokens.push(Token::new(
                             TokenType::TokenMinus,
-                            '-'.to_string(),
-                            '-'.to_string(),
+                            lexeme,
+                            lexeme,
                             self.line,
                         ));
                     }
                 }
                 '=' => {
+                    let lexeme = &self.stream[self.position..self.position];
                     self.tokens.push(Token::new(
                         TokenType::TokenEquals,
-                        "=".to_string(),
-                        "=".to_string(),
+                        lexeme,
+                        lexeme,
                         self.line,
                     ));
                 }
                 ',' => {
-                    self.tokens.push(Token::new(
-                        TokenType::TokenComma,
-                        ','.to_string(),
-                        ','.to_string(),
-                        self.line,
-                    ));
+                    let lexeme = &self.stream[self.position..self.position];
+                    self.tokens
+                        .push(Token::new(TokenType::TokenComma, lexeme, lexeme, self.line));
                 }
                 _ => {
                     if c.is_alphabetic() {
-                        let mut lexeme = String::new();
-                        lexeme.push(c);
+                        let start_pos = self.position - 1;
 
                         while let Some(ch) = self.peek() {
                             if ch.is_alphanumeric() || ch == '_' {
-                                lexeme.push(ch);
-                                _ = self.consume(); // consome o char q acabamos de ler
+                                self.consume();
                             } else {
                                 break;
                             }
                         }
-                        let kind = Lexer::get_reserved_token(&lexeme);
+                        let lexeme = &self.stream[start_pos..self.position];
+                        let kind = Lexer::get_reserved_token(lexeme);
                         self.tokens
-                            .push(Token::new(kind, lexeme.clone(), lexeme, self.line));
+                            .push(Token::new(kind, lexeme, lexeme, self.line));
                     } else if c.is_numeric() {
-                        let mut lexeme = String::new();
-                        lexeme.push(c);
+                        let start_pos = self.position - 1;
 
                         while let Some(ch) = self.peek() {
                             if ch.is_numeric() {
-                                lexeme.push(ch);
-                                _ = self.consume();
+                                self.consume();
                             } else {
                                 break;
                             }
                         }
 
+                        let lexeme = &self.stream[start_pos..self.position];
                         self.tokens.push(Token::new(
                             TokenType::TokenNum,
-                            lexeme.clone(),
+                            lexeme,
                             lexeme,
                             self.line,
                         ));
@@ -317,7 +305,7 @@ impl Error for LexerError {}
 
 fn main() -> Result<(), Box<dyn Error>> {
     let data = std::fs::read_to_string("utils/asm.txt").expect("ERROR: unable to read file.");
-    let mut lexer = Lexer::new().set_stream(data);
+    let mut lexer = Lexer::new(&data);
     lexer.run();
 
     for token in lexer.tokens {
