@@ -57,15 +57,15 @@ impl fmt::Display for TokenType {
     }
 }
 
-pub struct Token {
+pub struct Token<'a> {
     kind: TokenType,
-    lexeme: String,
-    literal: Option<String>,
+    lexeme: &'a str,
+    literal: Option<&'a str>,
     line: usize,
 }
 
-impl Token {
-    fn new(kind: TokenType, lexeme: String, literal: String, line: usize) -> Self {
+impl<'a> Token<'a> {
+    fn new(kind: TokenType, lexeme: &'a str, literal: &'a str, line: usize) -> Self {
         Token {
             kind,
             lexeme,
@@ -87,8 +87,8 @@ impl fmt::Display for Token {
     }
 }
 
-pub struct Lexer {
-    stream: Vec<char>,
+pub struct Lexer<'a> {
+    stream: &'a str,
     pub tokens: Vec<Token>,
     pub position: usize,
     pub ch: char,
@@ -96,21 +96,16 @@ pub struct Lexer {
     pub line: usize,
 }
 
-impl Lexer {
-    fn new() -> Self {
+impl<'a> Lexer<'a> {
+    fn new(stream: &'a str) -> Self {
         Lexer {
-            stream: vec![],
+            stream,
             tokens: vec![],
             position: 0,
             ch: '\0',
             error: None,
             line: 1,
         }
-    }
-
-    fn set_stream(mut self, stream: String) -> Self {
-        self.stream = stream.chars().collect();
-        return self;
     }
 
     fn consume(&mut self) -> Option<char> {
